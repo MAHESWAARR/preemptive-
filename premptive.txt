@@ -1,0 +1,88 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+struct process {
+    int pid;
+    int arrival_time;
+    int burst_time;
+    int waiting_time;
+    int turnaround_time;
+    float priority;
+};
+
+int main() {
+    int n;
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+
+    struct process *processes = malloc(n * sizeof(struct process));
+
+    // Input process details
+    for (int i = 0; i < n; i++) {
+        printf("Enter the arrival time and burst time for process %d: ", i+1);
+        scanf("%d %d", &processes[i].arrival_time, &processes[i].burst_time);
+        processes[i].pid = i+1;
+        processes[i].waiting_time = 0;
+        processes[i].turnaround_time = 0;
+        processes[i].priority = 1.0 + (float)processes[i].waiting_time / (float)processes[i].burst_time;
+    }
+
+    int current_time = 0;
+    int completed_processes = 0;
+
+    printf("\nGantt chart:\n");
+
+    while (completed_processes < n) {
+        int selected_process = -1;
+        float highest_priority = -1.0;
+
+        // Find process with highest priority
+        for (int i = 0; i < n; i++) {
+            if (processes[i].arrival_time <= current_time && processes[i].burst_time > 0) {
+                if (processes[i].priority > highest_priority) {
+                    highest_priority = processes[i].priority;
+                    selected_process = i;
+                }
+            }
+        }
+
+        if (selected_process == -1) {
+            // No processes available, idle CPU
+            printf("| Idle ");
+            current_time++;
+        } else {
+            // Execute selected process for one unit of time
+            printf("| P%d ", processes[selected_process].pid);
+            current_time++;
+            processes[selected_process].burst_time--;
+            processes[selected_process].waiting_time = current_time - processes[selected_process].arrival_time - (processes[selected_process].burst_time == 0 ? 0 : 1);
+            processes[selected_process].turnaround_time = current_time - processes[selected_process].arrival_time;
+            processes[selected_process].priority = 1.0 + (float)processes[selected_process].waiting_time / (float)processes[selected_process].burst_time;
+
+            if (processes[selected_process].burst_time == 0) {
+                completed_processes++;
+            }
+        }
+    }
+
+    // Output process details
+    float total_waiting_time = 0.0;
+    float total_turnaround_time = 0.0;
+
+    printf("\n\nProcess details:\n");
+    printf(" PID  Arrival Time  Burst Time  Waiting Time  Turnaround Time\n");
+    for (int i = 0; i < n; i++) {
+        printf("  %d        %d           %d            %d               %d\n",
+               processes[i].pid, processes[i].arrival_time, processes[i].burst_time,
+               processes[i].waiting_time, processes[i].turnaround_time);
+        total_waiting_time += processes[i].waiting_time;
+        total_turnaround_time += processes[i].turnaround_time;
+    }
+
+    printf("\nAverage waiting time: %.2f\n", total_waiting_time / (float)n);
+    printf("Average turnaround time: %.2f\n", total_turnaround_time / (float)n);
+
+    free(processes);
+
+    return 0;
+}
